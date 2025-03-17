@@ -1,0 +1,10 @@
+{
+  "name": "aamva-barcode-generator",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ]
+}

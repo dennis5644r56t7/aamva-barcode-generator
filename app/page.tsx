@@ -515,17 +515,6 @@ export default function Home() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">DD Number</label>
-              <input
-                type="text"
-                name="DD"
-                value={formData.DD}
-                onChange={handleInputChange}
-                placeholder="Enter DD number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-700">Vehicle Class</label>
               <select
                 name="vehicleClass"
@@ -627,24 +616,23 @@ export default function Home() {
             </div>
           </div>
 
-          {/* DD Section */}
+          {/* DD Information Section */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold border-b pb-2">Additional Information</h2>
+            <h2 className="text-lg font-semibold border-b pb-2">DD Information</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">DD - Organ Donor</label>
-                <select
+                <label className="block text-sm font-medium text-gray-700">DD Number</label>
+                <input
+                  type="text"
+                  name="DD"
                   value={formData.DD}
-                  onChange={(e) => setFormData({ ...formData, DD: e.target.value })}
+                  onChange={handleInputChange}
+                  placeholder="Enter DD number"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">Select</option>
-                  <option value="1">Yes</option>
-                  <option value="0">No</option>
-                </select>
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">DDF - Veteran</label>
+                <label className="block text-sm font-medium text-gray-700">DDF - Veteran Status</label>
                 <select
                   value={formData.DDF}
                   onChange={(e) => setFormData({ ...formData, DDF: e.target.value })}

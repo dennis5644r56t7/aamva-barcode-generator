@@ -102,39 +102,68 @@ const isValidDate = (dateStr: string): boolean => {
 
 export function formatAAMVAString(data: AAMVAData): string {
   try {
-    // Construct the AAMVA string
-    const header = '@\n\x1e\rANSI '; // Standard header
-    const version = '636055'; // AAMVA Version
-    const issuerID = '01'; // Example issuer ID
+    const country = COUNTRIES[data.country];
+    if (!country) throw new Error('Invalid country');
 
-    // Construct data elements with $ as separator
+    // Proper AAMVA header format
+    const header = '@\n\x1e\rANSI ';
+    const jurisdictionId = data.jurisdictionId.padStart(6, '0');
+    const aamvaVersion = data.aamvaVersion.padStart(2, '0');
+
+    // Format dates according to country format
+    const formattedDOB = formatDateForCountry(data.dateOfBirth, country);
+    const formattedIssue = data.issueDate ? formatDateForCountry(data.issueDate, country) : '';
+    const formattedExpiry = data.expiryDate ? formatDateForCountry(data.expiryDate, country) : '';
+
+    // Mandatory subfile type 'DL' for driver's license
+    const subfileType = 'DL';
+
+    // Construct data elements with proper separators
     const dataElements = [
+      // Required header elements
+      `DCT${subfileType}`,
+      `DCA${jurisdictionId}`,
+      `DBA${data.lastName.toUpperCase()}`,
+      `DCS${data.lastName.toUpperCase()}$${data.firstName.toUpperCase()}${data.middleName ? '$' + data.middleName.toUpperCase() : ''}`,
       `DAQ${data.licenseNumber}`,
-      `DCS${data.lastName}$${data.firstName}`,
-      `DDE${data.height}`,
-      `DAU${data.weight}`,
-      `DAY${data.eyeColor || ''}`,
-      `DAZ${data.hairColor || ''}`,
-      `DAG${data.address}`,
-      `DAI${data.city}`,
-      `DAJ${data.state}`,
-      `DAK${data.postalCode}`,
-      `DBB${data.dateOfBirth}`,
+      `DBD${formattedIssue}`,
+      `DBB${formattedDOB}`,
       `DBC${data.sex}`,
-      `DBD${data.issueDate || ''}`,
-      `DBE${data.restrictions || ''}`,
-      `DBF${data.vehicleClass || ''}`,
-      `DBG${data.endorsements || ''}`,
-      `DBH${data.expiryDate || ''}`,
-      `DD${data.DD || '0'}`,
-      `DDF${data.DDF || '0'}`,
-      `DDG${data.DDG || '0'}`,
-      `DDK${data.DDK || '0'}`,
-      `DDL${data.DDL || '0'}`
-    ].join('$');
+      `DBH${formattedExpiry}`,
+      
+      // Physical characteristics
+      `DAU${data.weight}`,
+      `DAY${data.eyeColor}`,
+      `DAZ${data.hairColor}`,
+      `DDE${data.height}`,
+      
+      // Address
+      `DAG${data.address.toUpperCase()}`,
+      `DAI${data.city.toUpperCase()}`,
+      `DAJ${data.state.toUpperCase()}`,
+      `DAK${data.postalCode}`,
+      
+      // Additional elements
+      `DCG${data.country}`,
+      `DCF${data.documentDiscriminator || ''}`,
+      `DCK${data.inventoryControl || ''}`,
+      
+      // Optional elements
+      data.restrictions ? `DBE${data.restrictions}` : null,
+      data.endorsements ? `DBF${data.endorsements}` : null,
+      data.vehicleClass ? `DBG${data.vehicleClass}` : null,
+      
+      // Additional data
+      data.DD === '1' ? 'DDK1' : null,
+      data.DDF === '1' ? 'DDF1' : null,
+      data.DDG === '1' ? 'DDG1' : null,
+      data.DDK === '1' ? 'DDK1' : null,
+      data.DDL === '1' ? 'DDL1' : null
+    ].filter(Boolean).join('\n');
 
-    // Combine all parts with $ separator
-    const fullString = `${header}${version}${issuerID}$${dataElements}$`;
+    // Combine all parts with proper control characters
+    const fullString = `${header}${jurisdictionId}${aamvaVersion}\n${dataElements}\n`;
+    console.log('Generated AAMVA string:', fullString);
     return fullString;
   } catch (error) {
     console.error('Error in formatAAMVAString:', error);

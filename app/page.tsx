@@ -203,18 +203,37 @@ export default function Home() {
         // Import bwip-js browser version and get the function
         const { toCanvas } = await import('@bwip-js/browser');
         
-        // Generate the barcode with US driver's license PDF417 standard dimensions
+        // Generate the barcode with exact AAMVA PDF417 specifications
         await toCanvas(canvas, {
           bcid: 'pdf417',
           text: aamvaString,
-          scale: 5,
-          height: 0.4,
-          width: 2.2,
-          includetext: false,
+          scale: 3,                // Adjusted for better scanning
+          height: 0.35,            // Standard height for AAMVA PDF417
+          width: 2.13,             // Standard width for AAMVA PDF417
+          parse: true,             // Enable parsing of input data
+          includetext: false,      // No human-readable text
+          backgroundcolor: 'FFFFFF', // White background
+          barcolor: '000000'       // Black bars
         });
 
-        // Convert to image data URL
-        const image = canvas.toDataURL('image/png');
+        // Adjust canvas size for better scanning
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          // Add white padding around the barcode
+          canvas.width = Math.ceil(canvas.width * 1.1);  // 10% padding
+          canvas.height = Math.ceil(canvas.height * 1.1);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Center the barcode in the padded canvas
+          ctx.putImageData(imageData, 
+            Math.floor((canvas.width - imageData.width) / 2),
+            Math.floor((canvas.height - imageData.height) / 2)
+          );
+        }
+
+        // Convert to image data URL with high quality
+        const image = canvas.toDataURL('image/png', 1.0);
         setBarcodeImage(image);
       } finally {
         // Clean up the canvas

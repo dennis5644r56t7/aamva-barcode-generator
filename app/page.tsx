@@ -116,16 +116,21 @@ export default function Home() {
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const updateFormData = <K extends keyof AAMVAData>(field: K, value: AAMVAData[K]) => {
+    console.log(`Updating ${field} to:`, value); // Debug form updates
+    setFormData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
+  };
+
   // Update jurisdiction ID when country/state changes
   useEffect(() => {
     const country = COUNTRIES[formData.country];
     if (country) {
       const state = country.states.find(s => s.code === formData.state);
       if (state) {
-        setFormData(prev => ({
-          ...prev,
-          jurisdictionId: state.issuerId
-        }));
+        updateFormData('jurisdictionId', state.issuerId);
       }
     }
   }, [formData.country, formData.state]);
@@ -133,23 +138,24 @@ export default function Home() {
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const country = COUNTRIES[e.target.value];
     if (country) {
-      setFormData(prev => ({
-        ...prev,
-        country: e.target.value,
-        state: country.states[0].code,
-        countryId: e.target.value
-      }));
+      updateFormData('country', e.target.value);
+      updateFormData('state', country.states[0].code);
+      updateFormData('countryId', e.target.value);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name in formData) {
+      updateFormData(name as keyof AAMVAData, value as AAMVAData[keyof AAMVAData]);
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    if (name in formData) {
+      updateFormData(name as keyof AAMVAData, checked as AAMVAData[keyof AAMVAData]);
+    }
   };
 
   // Convert height from feet/inches to inches
@@ -181,6 +187,13 @@ export default function Home() {
         DDL: formData.DDL || '0'
       };
 
+      // Debug name fields specifically
+      console.log('Name Fields:', {
+        firstName: updatedFormData.firstName,
+        middleName: updatedFormData.middleName,
+        lastName: updatedFormData.lastName
+      });
+
       const { isValid, errors } = validateAAMVAData(updatedFormData);
       if (!isValid) {
         setErrors(errors);
@@ -190,6 +203,8 @@ export default function Home() {
 
       const aamvaString = formatAAMVAString(updatedFormData);
       console.log('AAMVA String:', aamvaString);
+      console.log('AAMVA String Length:', aamvaString.length);
+      console.log('AAMVA String Hex:', Array.from(aamvaString).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' '));
       
       // Create a hidden canvas
       const canvas = document.createElement('canvas');
@@ -211,11 +226,12 @@ export default function Home() {
           text: aamvaString,
           scale: 3,              // Standard scale for driver's licenses
           width: 2,              // Width of the narrowest bar element
-          height: 2.5,           // Height-to-width ratio (lower for wider barcode)
-          parse: true,           // Enable parsing of input data
+          height: 3.0,           // Height-to-width ratio (increased for better scanning)
+          parse: false,          // Don't parse control characters
           includetext: false,    // No human-readable text
           backgroundcolor: 'FFFFFF', // White background
-          rowmult: 3             // Multiply row height for better scanning
+          rowmult: 4,            // Increased row height for better scanning
+          columns: 5             // Standard column count for driver's licenses
         });
 
         // Get the actual barcode dimensions
@@ -461,7 +477,7 @@ export default function Home() {
                     <input
                       type="number"
                       value={formData.height}
-                      onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                      onChange={(e) => updateFormData('height', e.target.value)}
                       placeholder="Height in inches"
                       className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
@@ -585,7 +601,7 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700">Restrictions</label>
                 <select
                   value={formData.restrictions}
-                  onChange={(e) => setFormData({ ...formData, restrictions: e.target.value })}
+                  onChange={(e) => updateFormData('restrictions', e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select Restriction</option>
@@ -600,7 +616,7 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700">Endorsements</label>
                 <select
                   value={formData.endorsements}
-                  onChange={(e) => setFormData({ ...formData, endorsements: e.target.value })}
+                  onChange={(e) => updateFormData('endorsements', e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select Endorsement</option>
@@ -685,7 +701,7 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700">DDF - Veteran Status</label>
                 <select
                   value={formData.DDF}
-                  onChange={(e) => setFormData({ ...formData, DDF: e.target.value })}
+                  onChange={(e) => updateFormData('DDF', e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select</option>
@@ -697,7 +713,7 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700">DDG - Insulin Dependent</label>
                 <select
                   value={formData.DDG}
-                  onChange={(e) => setFormData({ ...formData, DDG: e.target.value })}
+                  onChange={(e) => updateFormData('DDG', e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select</option>
@@ -709,7 +725,7 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700">DDK - Hard of Hearing</label>
                 <select
                   value={formData.DDK}
-                  onChange={(e) => setFormData({ ...formData, DDK: e.target.value })}
+                  onChange={(e) => updateFormData('DDK', e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select</option>
@@ -721,7 +737,7 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700">DDL - Vision Impaired</label>
                 <select
                   value={formData.DDL}
-                  onChange={(e) => setFormData({ ...formData, DDL: e.target.value })}
+                  onChange={(e) => updateFormData('DDL', e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select</option>

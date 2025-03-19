@@ -214,7 +214,8 @@ export default function Home() {
           height: 2.5,           // Height-to-width ratio (lower for wider barcode)
           parse: true,           // Enable parsing of input data
           includetext: false,    // No human-readable text
-          backgroundcolor: 'FFFFFF' // White background
+          backgroundcolor: 'FFFFFF', // White background
+          rowmult: 3             // Multiply row height for better scanning
         });
 
         // Get the actual barcode dimensions

@@ -201,17 +201,17 @@ export default function Home() {
         // Import bwip-js browser version and get the function
         const { toCanvas } = await import('@bwip-js/browser');
         
-        // Set initial canvas size
-        canvas.width = 500;
-        canvas.height = 150;
+        // Set initial canvas size for PVC card dimensions
+        canvas.width = 640;
+        canvas.height = 110;
         
         // Generate the barcode with PDF417 specifications for driver's licenses
         await toCanvas(canvas, {
           bcid: 'pdf417',
           text: aamvaString,
           scale: 3,              // Standard scale for driver's licenses
-          width: 2,              // Standard bar width
-          height: 3,             // Standard height ratio
+          width: 2,              // Width of the narrowest bar element
+          height: 2.5,           // Height-to-width ratio (lower for wider barcode)
           parse: true,           // Enable parsing of input data
           includetext: false,    // No human-readable text
           backgroundcolor: 'FFFFFF' // White background
@@ -226,7 +226,7 @@ export default function Home() {
           let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
           
           // Scan for non-white pixels to find actual barcode bounds
-          for (let y = 0; y < canvas.height; y++) {
+          for (let y = 0; y <canvas.height; y++) {
             for (let x = 0; x < canvas.width; x++) {
               const i = (y * canvas.width + x) * 4;
               if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
@@ -238,12 +238,12 @@ export default function Home() {
             }
           }
           
-          // Add padding around the barcode
-          const padding = 20;
+          // Add padding based on PVC card dimensions
+          const padding = 10;
           const barcodeWidth = maxX - minX;
           const barcodeHeight = maxY - minY;
           
-          // Create a new canvas with exact dimensions
+          // Create a new canvas with exact PVC card barcode dimensions (match reference image)
           const finalCanvas = document.createElement('canvas');
           finalCanvas.width = barcodeWidth + (padding * 2);
           finalCanvas.height = barcodeHeight + (padding * 2);

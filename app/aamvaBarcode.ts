@@ -105,8 +105,8 @@ export function formatAAMVAString(data: AAMVAData): string {
     const country = COUNTRIES[data.country];
     if (!country) throw new Error('Invalid country');
 
-    // Proper AAMVA header format with exact control characters
-    const header = '@\n\x1e\rANSI ';
+    // Exact AAMVA header format with control characters
+    const header = '@\n\u001e\rANSI ';
     const jurisdictionId = data.jurisdictionId.padStart(6, '0');
     const aamvaVersion = data.aamvaVersion.padStart(2, '0');
     const numEntries = '01';  // Fixed to 1 entry for driver's license
@@ -120,11 +120,11 @@ export function formatAAMVAString(data: AAMVAData): string {
     const subfileType = 'DL';
     const subfileHeader = `${header}${jurisdictionId}${aamvaVersion}${numEntries}${subfileType}`;
 
-    // Construct data elements with proper separators
+    // Construct data elements with exact AAMVA order and format
     const dataElements = [
       // Required header elements
       `DAQ${data.licenseNumber}`,
-      `DCS${data.lastName.toUpperCase()}$${data.firstName.toUpperCase()}${data.middleName ? '$' + data.middleName.toUpperCase() : ''}`,
+      `DCS${data.lastName.toUpperCase()}`,
       `DAC${data.firstName.toUpperCase()}`,
       `DAD${data.middleName ? data.middleName.toUpperCase() : ''}`,
       `DBD${formattedIssue}`,
@@ -140,7 +140,7 @@ export function formatAAMVAString(data: AAMVAData): string {
       `DAJ${data.state.toUpperCase()}`,
       `DAK${data.postalCode}`,
       
-      // Additional elements
+      // Additional required elements
       `DCF${data.documentDiscriminator || ''}`,
       `DCG${data.countryId || 'USA'}`,
       
@@ -151,13 +151,6 @@ export function formatAAMVAString(data: AAMVAData): string {
       
       // Physical characteristics
       `DAZ${data.hairColor}`,
-      
-      // Additional data
-      data.DD === '1' ? 'DDK1' : null,
-      data.DDF === '1' ? 'DDF1' : null,
-      data.DDG === '1' ? 'DDG1' : null,
-      data.DDK === '1' ? 'DDK1' : null,
-      data.DDL === '1' ? 'DDL1' : null,
       
       // Optional elements
       data.restrictions ? `DCB${data.restrictions}` : null,
@@ -173,13 +166,17 @@ export function formatAAMVAString(data: AAMVAData): string {
       // Weight
       data.weight ? `DAW${data.weight}` : null,
       
+      // Additional elements
+      data.isOrganDonor ? 'DDK1' : null,
+      data.isVeteran ? 'DDF1' : null,
+      
       // Under age dates
       data.under18Until ? `DDH${formatDateForCountry(data.under18Until, country)}` : null,
       data.under19Until ? `DDI${formatDateForCountry(data.under19Until, country)}` : null,
       data.under21Until ? `DDJ${formatDateForCountry(data.under21Until, country)}` : null
     ].filter(Boolean).join('\n');
 
-    // Combine all parts with proper control characters and terminator
+    // Combine with proper control characters
     const fullString = `${subfileHeader}\n${dataElements}\r`;
     console.log('Generated AAMVA string:', fullString);
     return fullString;

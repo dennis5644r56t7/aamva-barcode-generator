@@ -194,7 +194,7 @@ export default function Home() {
       // Create a hidden canvas
       const canvas = document.createElement('canvas');
       canvas.id = 'barcodeCanvas';
-      canvas.width = 500;
+      canvas.width = 600;
       canvas.height = 200;
       canvas.style.display = 'none';
       document.body.appendChild(canvas);
@@ -203,40 +203,40 @@ export default function Home() {
         // Import bwip-js browser version and get the function
         const { toCanvas } = await import('@bwip-js/browser');
         
-        // Generate the barcode with exact AAMVA PDF417 specifications
+        // Generate the barcode with optimal settings for PDF417
         await toCanvas(canvas, {
           bcid: 'pdf417',
           text: aamvaString,
-          scale: 3,                // Adjusted for better scanning
-          height: 0.35,            // Standard height for AAMVA PDF417
-          width: 2.13,             // Standard width for AAMVA PDF417
-          parse: true,             // Enable parsing of input data
-          includetext: false,      // No human-readable text
-          backgroundcolor: 'FFFFFF', // White background
-          barcolor: '000000'       // Black bars
+          scale: 5,              // Higher scale for better resolution
+          width: 3,              // Wider bars for better scanning
+          parse: true,           // Enable parsing of input data
+          includetext: false,    // No human-readable text
+          backgroundcolor: 'FFFFFF'  // White background
         });
 
-        // Adjust canvas size for better scanning
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          // Add white padding around the barcode
-          canvas.width = Math.ceil(canvas.width * 1.1);  // 10% padding
-          canvas.height = Math.ceil(canvas.height * 1.1);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          // Center the barcode in the padded canvas
-          ctx.putImageData(imageData, 
-            Math.floor((canvas.width - imageData.width) / 2),
-            Math.floor((canvas.height - imageData.height) / 2)
-          );
+        // Create a new canvas for the final image
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = canvas.width;
+        finalCanvas.height = canvas.height;
+        
+        const finalCtx = finalCanvas.getContext('2d');
+        if (finalCtx) {
+          // Fill with white background
+          finalCtx.fillStyle = '#FFFFFF';
+          finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+          
+          // Draw the barcode centered
+          finalCtx.drawImage(canvas, 0, 0);
+          
+          // Convert to high-quality PNG
+          const image = finalCanvas.toDataURL('image/png', 1.0);
+          setBarcodeImage(image);
+          
+          // Clean up
+          finalCanvas.remove();
         }
-
-        // Convert to image data URL with high quality
-        const image = canvas.toDataURL('image/png', 1.0);
-        setBarcodeImage(image);
       } finally {
-        // Clean up the canvas
+        // Clean up the main canvas
         if (document.body.contains(canvas)) {
           document.body.removeChild(canvas);
         }
@@ -250,14 +250,30 @@ export default function Home() {
   };
 
   const downloadBarcode = () => {
-    if (!barcodeImage) return;
+    if (!barcodeImage) {
+      setErrors(['Please generate a barcode first']);
+      return;
+    }
 
-    const link = document.createElement('a');
-    link.href = barcodeImage;
-    link.download = `${formData.country}-${formData.state}-license-${formData.licenseNumber || 'generated'}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Create a temporary image to verify the barcode data
+    const img = new Image();
+    img.onload = () => {
+      // Only proceed if the image has actual dimensions
+      if (img.width > 0 && img.height > 0) {
+        const link = document.createElement('a');
+        link.href = barcodeImage;
+        link.download = `${formData.country}-${formData.state}-license-${formData.licenseNumber || 'generated'}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        setErrors(['Generated barcode appears to be empty. Please try again.']);
+      }
+    };
+    img.onerror = () => {
+      setErrors(['Failed to process the barcode image. Please try again.']);
+    };
+    img.src = barcodeImage;
   };
 
   return (

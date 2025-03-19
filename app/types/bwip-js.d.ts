@@ -5,15 +5,15 @@ declare module 'bwip-js' {
     scale?: number;
     height?: number;
     width?: number;
-    rows?: number;
-    columns?: number;
-    eclevel?: number;
-    guardwhitespace?: number;
-    inkspread?: number;
-    parsefnc?: boolean;
+    parse?: boolean;
     includetext?: boolean;
-    textxalign?: string;
+    textxalign?: 'center' | 'left' | 'right';
+    textyalign?: 'center' | 'below' | 'above';
+    backgroundcolor?: string;
+    barcolor?: string;
+    paddingwidth?: number;
+    paddingheight?: number;
   }
 
-  const toCanvas: (canvasId: string, options: BwipJsOptions) => Promise<HTMLCanvasElement>;
+  const toCanvas: (canvasId: string | HTMLCanvasElement, options: BwipJsOptions) => Promise<HTMLCanvasElement>;
 }

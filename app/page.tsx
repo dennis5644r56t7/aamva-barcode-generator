@@ -194,8 +194,6 @@ export default function Home() {
       // Create a hidden canvas
       const canvas = document.createElement('canvas');
       canvas.id = 'barcodeCanvas';
-      canvas.width = 600;
-      canvas.height = 200;
       canvas.style.display = 'none';
       document.body.appendChild(canvas);
 
@@ -203,37 +201,72 @@ export default function Home() {
         // Import bwip-js browser version and get the function
         const { toCanvas } = await import('@bwip-js/browser');
         
-        // Generate the barcode with optimal settings for PDF417
+        // Set initial canvas size
+        canvas.width = 500;
+        canvas.height = 150;
+        
+        // Generate the barcode with PDF417 specifications for driver's licenses
         await toCanvas(canvas, {
           bcid: 'pdf417',
           text: aamvaString,
-          scale: 5,              // Higher scale for better resolution
-          width: 3,              // Wider bars for better scanning
+          scale: 3,              // Standard scale for driver's licenses
+          width: 2,              // Standard bar width
+          height: 3,             // Standard height ratio
           parse: true,           // Enable parsing of input data
           includetext: false,    // No human-readable text
-          backgroundcolor: 'FFFFFF'  // White background
+          backgroundcolor: 'FFFFFF' // White background
         });
 
-        // Create a new canvas for the final image
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = canvas.width;
-        finalCanvas.height = canvas.height;
-        
-        const finalCtx = finalCanvas.getContext('2d');
-        if (finalCtx) {
-          // Fill with white background
-          finalCtx.fillStyle = '#FFFFFF';
-          finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+        // Get the actual barcode dimensions
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Find the actual barcode bounds by scanning the canvas
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
           
-          // Draw the barcode centered
-          finalCtx.drawImage(canvas, 0, 0);
+          // Scan for non-white pixels to find actual barcode bounds
+          for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+              const i = (y * canvas.width + x) * 4;
+              if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+              }
+            }
+          }
           
-          // Convert to high-quality PNG
-          const image = finalCanvas.toDataURL('image/png', 1.0);
-          setBarcodeImage(image);
+          // Add padding around the barcode
+          const padding = 20;
+          const barcodeWidth = maxX - minX;
+          const barcodeHeight = maxY - minY;
           
-          // Clean up
-          finalCanvas.remove();
+          // Create a new canvas with exact dimensions
+          const finalCanvas = document.createElement('canvas');
+          finalCanvas.width = barcodeWidth + (padding * 2);
+          finalCanvas.height = barcodeHeight + (padding * 2);
+          
+          const finalCtx = finalCanvas.getContext('2d');
+          if (finalCtx) {
+            // Fill with white background
+            finalCtx.fillStyle = '#FFFFFF';
+            finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+            
+            // Draw only the barcode portion, centered
+            finalCtx.drawImage(canvas, 
+              minX, minY, barcodeWidth, barcodeHeight,
+              padding, padding, barcodeWidth, barcodeHeight
+            );
+            
+            // Convert to high-quality PNG
+            const image = finalCanvas.toDataURL('image/png', 1.0);
+            setBarcodeImage(image);
+            
+            // Clean up
+            finalCanvas.remove();
+          }
         }
       } finally {
         // Clean up the main canvas

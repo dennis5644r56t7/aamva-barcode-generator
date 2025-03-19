@@ -13,6 +13,9 @@ declare module 'bwip-js' {
     barcolor?: string;
     paddingwidth?: number;
     paddingheight?: number;
+    columns?: number;
+    rows?: number;
+    rowmult?: number;
   }
 
   const toCanvas: (canvasId: string | HTMLCanvasElement, options: BwipJsOptions) => Promise<HTMLCanvasElement>;

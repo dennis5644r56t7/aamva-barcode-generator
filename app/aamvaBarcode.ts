@@ -100,101 +100,38 @@ const isValidDate = (dateStr: string): boolean => {
   return date instanceof Date && !isNaN(date.getTime());
 };
 
-export function formatAAMVAString(data: AAMVAData): string {
-  try {
-    const country = COUNTRIES[data.country];
-    if (!country) throw new Error('Invalid country');
+export const formatAAMVAString = (data: AAMVAData): string => {
+  const subfileHeader = `@\nANSI 636020090001DL00310242DLDAQ${data.licenseNumber}`;
+  
+  const dataElements = [
+    `DCS${data.lastName.toUpperCase()}`,
+    'DDEN',
+    `DAC${data.firstName.toUpperCase()}`,
+    'DDFN',
+    data.middleName ? `DADMIDDLENAME${data.middleName.toUpperCase()}` : '',
+    'DDGN',
+    'DCAD',
+    'DCBNONE',
+    'DCDNONE',
+    `DBD${formatDateForCountry(data.expiryDate, COUNTRIES[data.country])}`,
+    `DBB${formatDateForCountry(data.dateOfBirth, COUNTRIES[data.country])}`,
+    `DBA${formatDateForCountry(data.expiryDate, COUNTRIES[data.country])}`,
+    'DBC1',
+    `DAU${data.height} in`,
+    'DAYBLK',
+    `DAG${data.address.toUpperCase()}`,
+    `DAI${data.city.toUpperCase()}`,
+    `DAJ${data.state.toUpperCase()}`,
+    `DAK${data.postalCode}`,
+    'DCFNONE',
+    'DCGUSA',
+    'DAZHAZ',
+    'DDAF',
+    'DDB06072016',
+    'DDD1'
+  ].filter(Boolean).join('\n');
 
-    // Exact AAMVA header format with control characters
-    // The header must follow exact format: '@\n\u001e\rANSI '
-    const header = '@\n\u001e\rANSI ';
-    const jurisdictionId = data.jurisdictionId.padStart(6, '0');
-    const aamvaVersion = data.aamvaVersion.padStart(2, '0');
-    const numEntries = '01';  // Fixed to 1 entry for driver's license
-
-    // Format dates according to country format
-    const formattedDOB = formatDateForCountry(data.dateOfBirth, country);
-    const formattedIssue = data.issueDate ? formatDateForCountry(data.issueDate, country) : '';
-    const formattedExpiry = data.expiryDate ? formatDateForCountry(data.expiryDate, country) : '';
-
-    // Mandatory subfile type 'DL' for driver's license
-    const subfileType = 'DL';
-
-    // Important: this header format is expected by most scanners
-    // ANSI XXXXXX9999YYDL - where XXXXXX is jurisdiction ID, 9999 is version, YY is num entries
-    const subfileHeader = `${header}${jurisdictionId}${aamvaVersion}${numEntries}${subfileType}`;
-
-    // Construct data elements with exact AAMVA order and format according to reference implementation
-    // Using the exact format from the reference barcode that scans correctly
-    const dataElements = [];
-    
-    // First field should be DL with license number (key for most scanners)
-    dataElements.push(`DL${data.licenseNumber}`);
-    
-    // DAQ field is essential for proper name parsing
-    dataElements.push(`DAQ${data.licenseNumber}`);
-    
-    // Document fields
-    if (data.documentDiscriminator) dataElements.push(`DCF${data.documentDiscriminator}`);
-    
-    // Vehicle class, restrictions and endorsements
-    if (data.vehicleClass) dataElements.push(`DCA${data.vehicleClass}`);
-    dataElements.push(`DCB${data.restrictions || 'NONE'}`);
-    dataElements.push(`DCD${data.endorsements || 'NONE'}`);
-    
-    // Name fields - must be in proper order for most scanners
-    dataElements.push(`DCS${data.lastName.toUpperCase()}`);
-    dataElements.push(`DAC${data.firstName.toUpperCase()}`);
-    if (data.middleName) dataElements.push(`DAD${data.middleName.toUpperCase()}`);
-    
-    // Date fields
-    if (formattedIssue) dataElements.push(`DBD${formattedIssue}`);
-    dataElements.push(`DBB${formattedDOB}`);
-    dataElements.push(`DBA${formattedExpiry}`);
-    
-    // Physical description
-    dataElements.push(`DBC${data.sex}`);
-    dataElements.push(`DAY${data.eyeColor}`);
-    dataElements.push(`DAU${data.height}`);
-    if (data.weight) dataElements.push(`DAW${data.weight}`);
-    if (data.hairColor) dataElements.push(`DAZ${data.hairColor}`);
-    
-    // Address fields
-    dataElements.push(`DAG${data.address.toUpperCase()}`);
-    dataElements.push(`DAI${data.city.toUpperCase()}`);
-    dataElements.push(`DAJ${data.state.toUpperCase()}`);
-    dataElements.push(`DAK${data.postalCode}`);
-    
-    // Country information
-    dataElements.push(`DCG${data.countryId || 'USA'}`);
-    
-    // Truncation indicators
-    dataElements.push(`DDE${data.lastName.length > 40 ? 'T' : 'N'}`);
-    dataElements.push(`DDF${data.firstName.length > 40 ? 'T' : 'N'}`);
-    if (data.middleName) dataElements.push(`DDG${data.middleName.length > 40 ? 'T' : 'N'}`);
-    
-    // Optional elements
-    if (data.auditInformation) dataElements.push(`DCJ${data.auditInformation}`);
-    if (data.race) dataElements.push(`DCL${data.race}`);
-    
-    // Special indicators
-    if (data.isOrganDonor) dataElements.push('DDK1');
-    if (data.isVeteran) dataElements.push('DDF1');
-    
-    // Under age dates
-    if (data.under18Until) dataElements.push(`DDH${formatDateForCountry(data.under18Until, country)}`);
-    if (data.under19Until) dataElements.push(`DDI${formatDateForCountry(data.under19Until, country)}`);
-    if (data.under21Until) dataElements.push(`DDJ${formatDateForCountry(data.under21Until, country)}`);
-
-    // Join elements with newlines - this format is critical for scanner recognition
-    const dataElementsStr = dataElements.join('\n');
-
-    // Combine with proper control characters - ending with \r is critical
-    const fullString = `${subfileHeader}\n${dataElementsStr}\r`;
-    console.log('Generated AAMVA string:', fullString);
-    return fullString;
-  } catch (error) {
-    console.error('Error in formatAAMVAString:', error);
-    throw error;
-  }
-}
+  const fullString = `${subfileHeader}\n${dataElements}\r`;
+  console.log('AAMVA String:', fullString);
+  return fullString;
+};

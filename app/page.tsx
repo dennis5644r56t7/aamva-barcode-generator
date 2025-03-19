@@ -221,18 +221,31 @@ export default function Home() {
         canvas.height = 110;
         
         // Generate the barcode with PDF417 specifications for driver's licenses
-        await toCanvas(canvas, {
+        const options = {
           bcid: 'pdf417',
           text: aamvaString,
-          scale: 3,              // Standard scale for driver's licenses
-          width: 2,              // Width of the narrowest bar element
-          height: 3.0,           // Height-to-width ratio (increased for better scanning)
-          parse: false,          // Don't parse control characters
-          includetext: false,    // No human-readable text
-          backgroundcolor: 'FFFFFF', // White background
-          rowmult: 4,            // Increased row height for better scanning
-          columns: 5             // Standard column count for driver's licenses
-        });
+          scale: 2, // Reduced from 3 to 2 for better readability at smaller sizes
+          height: 3.0, // Height-to-width ratio
+          includetext: false,
+          textxalign: 'center' as const,
+          textsize: 10,
+          textyalign: 'below' as const,
+          textgap: 5,
+          parse: false, // Preserve control characters
+          rowmult: 4, // Row multiplier
+          columns: 5, // Standard for driver's licenses
+          quiet: 2, // Quiet zone
+          margin: 10,
+          rotate: 0,
+          background: '#ffffff',
+          foreground: '#000000',
+          module: 1,
+          width: 1.5 * 72, // Reduced from 2.125 to 1.5 inches
+          barHeight: 0.5 * 72, // Reduced from 0.75 to 0.5 inches
+        };
+
+        await toCanvas(canvas, options);
+        console.log('Barcode generated successfully');
 
         // Get the actual barcode dimensions
         const ctx = canvas.getContext('2d');
